@@ -1,0 +1,35 @@
+# Binaries / build output
+/unic-panel
+/panel
+*.exe
+*.out
+bin/
+dist/
+
+# Go
+/vendor/
+
+# Database / runtime data
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# Secrets / local config (never commit)
+.env
+.env.*
+*.local
+config.local.*
+secrets/
+*.pem
+*.key
+
+# Frontend build deps
+web/node_modules/
+web/.cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
