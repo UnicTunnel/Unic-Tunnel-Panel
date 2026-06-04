@@ -33,9 +33,15 @@ case "$action" in
     create)
         ensure_group
         useradd -m -g "$TUNNEL_GROUP" -s /usr/sbin/nologin "$username"
-        # Read password from stdin (single line, no trailing newline).
-        IFS= read -r pw || die "expected password on stdin"
+        # If anything below fails, undo the useradd so we don't orphan an
+        # account without a password.
+        trap "userdel -r '$username' >/dev/null 2>&1 || true" ERR
+        # Use cat (not `read`) so we don't care whether the caller terminates
+        # the password with a newline. $() strips trailing newlines.
+        pw=$(cat)
+        [ -n "$pw" ] || die "empty password on stdin"
         printf '%s:%s\n' "$username" "$pw" | chpasswd
+        trap - ERR
         ;;
     lock)
         usermod -L "$username"

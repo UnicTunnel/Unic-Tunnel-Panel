@@ -24,7 +24,9 @@ type sudoProv struct{ script string }
 
 func (p *sudoProv) Create(ctx context.Context, username, password string) error {
 	cmd := exec.CommandContext(ctx, "sudo", "-n", p.script, "create", username)
-	cmd.Stdin = strings.NewReader(password)
+	// Trailing newline so a bash `read` on the other side succeeds. The script
+	// uses `cat` instead and strips it via $() anyway — newline is belt+suspenders.
+	cmd.Stdin = strings.NewReader(password + "\n")
 	return p.run(cmd, "create", username)
 }
 
