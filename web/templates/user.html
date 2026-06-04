@@ -1,0 +1,19 @@
+{{define "content"}}
+<p><a href="/">&larr; Back</a></p>
+<h1>{{.User.Name}}</h1>
+<p class="muted">Username <code>{{.User.Username}}</code> · {{.User.Status}} · created {{fmtTime .User.CreatedAt}}</p>
+
+<h2>Connection link</h2>
+<p class="muted">Share this only over a trusted channel. It contains the SSH password.</p>
+<div class="link-box">
+  <code id="link">{{.Link}}</code>
+  <button onclick="navigator.clipboard.writeText(document.getElementById('link').textContent)">Copy</button>
+</div>
+
+{{if eq .User.Status "active"}}
+<form method="post" action="/users/{{.User.ID}}/revoke" class="mt"
+      onsubmit="return confirm('Revoke {{.User.Name}}? They will be cut off immediately.')">
+  <button class="danger">Revoke this user</button>
+</form>
+{{end}}
+{{end}}

@@ -1,0 +1,21 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unic-Tunnel Panel</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <a href="/" class="brand">Unic-Tunnel</a>
+  {{if .ShowLogout}}<form method="post" action="/logout" class="logout"><button>Log out</button></form>{{end}}
+</header>
+<main>
+  {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
+  {{template "content" .Data}}
+</main>
+<footer><small>v1 · SSH-only</small></footer>
+</body>
+</html>
+{{end}}

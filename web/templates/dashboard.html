@@ -1,0 +1,36 @@
+{{define "content"}}
+<div class="hd">
+  <h1>Tunnel users</h1>
+  <span class="muted">Server: {{.SSHHost}}:{{.SSHPort}}</span>
+</div>
+
+<form method="post" action="/users" class="row">
+  <input name="name" placeholder="Name this user (e.g. Sara — laptop)" required>
+  <button type="submit">Create user</button>
+</form>
+
+{{if .Users}}
+<table>
+  <thead><tr><th>Name</th><th>Username</th><th>Status</th><th>Created</th><th></th></tr></thead>
+  <tbody>
+    {{range .Users}}
+    <tr class="status-{{.Status}}">
+      <td><a href="/users/{{.ID}}">{{.Name}}</a></td>
+      <td><code>{{.Username}}</code></td>
+      <td>{{.Status}}</td>
+      <td>{{fmtTime .CreatedAt}}</td>
+      <td>
+        {{if eq .Status "active"}}
+        <form method="post" action="/users/{{.ID}}/revoke" onsubmit="return confirm('Revoke {{.Name}}? They will be cut off immediately.')">
+          <button class="danger">Revoke</button>
+        </form>
+        {{end}}
+      </td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="muted">No users yet — create one above.</p>
+{{end}}
+{{end}}
