@@ -1,0 +1,37 @@
+[Unit]
+Description=Unic-Tunnel Panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=unicpanel
+Group=unicpanel
+WorkingDirectory=/var/lib/unic-panel
+ExecStart=/usr/local/bin/unic-panel
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/etc/unic-panel.env
+
+# NOTE: NoNewPrivileges is intentionally NOT set — the panel calls sudo to
+# provision tunnel users, which requires setuid to escalate. The sudoers entry
+# (/etc/sudoers.d/unicpanel) restricts that escalation to one specific script.
+
+# Hardening — what we *can* enable without breaking sudo:
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/unic-panel
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=no
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

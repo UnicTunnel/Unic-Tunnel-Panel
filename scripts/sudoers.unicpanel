@@ -1,0 +1,10 @@
+# /etc/sudoers.d/unicpanel
+#
+# Lets the 'unicpanel' service user run ONLY the tunnel-user.sh script.
+# Anything else still requires the real root password.
+#
+# Install:
+#   sudo install -m 0440 -o root -g root scripts/sudoers.unicpanel /etc/sudoers.d/unicpanel
+# Validate:
+#   sudo visudo -cf /etc/sudoers.d/unicpanel
+unicpanel ALL=(root) NOPASSWD: /usr/local/sbin/tunnel-user.sh

@@ -43,8 +43,7 @@ func main() {
 	case "stub":
 		prov = accounts.NewStub()
 	case "sudo":
-		log.Printf("WARN: UNIC_PROVISIONER=sudo requested but Sudo impl not built yet; using Stub for now")
-		prov = accounts.NewStub()
+		prov = accounts.NewSudo(cfg.SudoScriptPath)
 	}
 
 	srv := server.New(server.Deps{
