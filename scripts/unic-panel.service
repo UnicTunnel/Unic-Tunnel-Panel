@@ -13,19 +13,21 @@ Restart=on-failure
 RestartSec=5
 EnvironmentFile=/etc/unic-panel.env
 
-# NOTE: NoNewPrivileges is intentionally NOT set — the panel calls sudo to
-# provision tunnel users, which requires setuid to escalate. The sudoers entry
-# (/etc/sudoers.d/unicpanel) restricts that escalation to one specific script.
+# Hardening notes (each rejected flag and why):
 #
-# Critically, several systemd hardening flags IMPLICITLY set NoNewPrivileges=yes
-# in a way that cannot be overridden — Protect{KernelTunables,KernelModules,
-# ControlGroups}, RestrictNamespaces, RestrictRealtime, LockPersonality, etc.
-# Including any of them here would silently break sudo. So the hardening below
-# is deliberately restricted to flags that do NOT imply NoNewPrivileges.
+# - NoNewPrivileges=yes — breaks sudo entirely (sudo needs setuid). Many other
+#   ProtectX/RestrictX flags IMPLY this and cannot be overridden, so they're out.
+#
+# - ProtectSystem=strict — makes /etc read-only for the cgroup, even for sudo'd
+#   children. useradd then can't lock /etc/passwd. Out.
+#
+# - ProtectHome=yes — hides /home, so useradd -m can't create /home/<u>. Out.
+#
+# The defense-in-depth comes from (a) running as the low-privilege `unicpanel`
+# user and (b) the scoped sudoers entry that restricts privilege escalation to
+# one specific script. PrivateTmp is safe and worth keeping — /etc and /home
+# are outside /tmp so useradd is unaffected.
 
-ProtectSystem=strict
-ProtectHome=yes
-ReadWritePaths=/var/lib/unic-panel
 PrivateTmp=yes
 
 StandardOutput=journal
