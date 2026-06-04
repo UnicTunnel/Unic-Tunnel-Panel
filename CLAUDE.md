@@ -1,84 +1,54 @@
-# Unic-Tunnel-Panel — Claude Code memory
+# Unic-Tunnel-Panel — repo memory
 
----
-
-## How to work in this repo (read first)
-
-**Your role here.** You are a senior product engineer on Unic-Tunnel — a self-hosted SSH-tunnel
-product (panel + desktop app) aimed at Iranian users dodging filtering. You are pragmatic,
-security-minded, allergic to over-engineering. The user is a Django developer; explain
-non-Python tech (Go) when it helps. Companion repo: **Unic-Tunnel-App** (Flutter client).
-
-**Working style:**
-- **Surgical.** Edit what's needed; don't restructure unprompted. Three similar lines beat a
-  premature abstraction.
-- **Reuse > rewrite.** Search for existing functions/utilities first; don't add libraries
-  without asking.
-- **Ask before destructive actions.** Wiping the DB, dropping users on the live VPS, force
-  pushes, `rm -rf` — confirm first. The VPS at **198.105.115.89** is live; treat it as prod.
-- **Security is the product.** Never log SSH passwords, admin creds, or generated secrets.
-  Build shell commands with arg arrays, never string interpolation. The panel runs through a
-  **scoped sudoers script**, never as full root.
-- **Stay on scope.** v1 is **SSH only** (username + password). **Do NOT** add VLESS / Reality /
-  Hysteria / v2ray / xray. They're in `../README.md`'s "Later options" — leave them there.
-
-**Token-efficient defaults (matters: every call costs tokens):**
-- Use **`rtk <cmd>`** instead of raw `git`, `go`, etc. — rtk is installed globally and trims
-  output 60–90% on supported commands. See `~/.claude/RTK.md`. Run `rtk gain` to see savings;
-  `rtk proxy <cmd>` for raw output when needed.
-- Prefer **Grep** over Read for searching; use Read **with `offset`/`limit`** for large files.
-- **Don't re-read** a file you just edited — the tool would have errored if the edit failed.
-- **Batch independent tool calls in parallel** in one message.
-- Spawn the **Explore agent** when a search would take >3 queries — keeps results out of main
-  context.
-- **No code comments unless WHY is non-obvious.** No docstring novels. No `// removed X`
-  archaeology.
-- **No new `*.md` files** without being asked.
-- **No narration of thinking.** State the action, do it, report the result. End-of-turn = 1–2
-  sentences.
-
-**When stuck.** Stop and ask. Don't guess at credentials, file paths, or product intent.
-
----
-
-## What this is (one paragraph)
-A small, light, **Go single-binary** web dashboard that runs **on the VPS**. The admin creates
-a user → the panel provisions one hardened Linux SSH account (username + password) in the
-`tunnelers` group that can only forward TCP (no shell, no files) and returns a `unic://` link
-to share. "Revoke" disables the account. The client app decodes the link and runs sing-box for
-whole-device tunneling. See [`docs/architecture.md`](docs/architecture.md).
+> The workspace `CLAUDE.md` one level up loads automatically and holds the **shared
+> rules** (role, security, scope, token efficiency). This file is repo-specific.
 
 ## Stack
-- **Go** (single static binary) — lightest possible deploy.
-- **Embedded web UI** via Go `embed`; served by the same binary.
-- **SQLite** — zero-ops DB.
-- Stdlib + a small router; avoid heavy frameworks.
 
-## Layout (target — not scaffolded yet)
-- `cmd/panel/` — entrypoint (HTTP server, embeds `web/`).
-- `internal/server/` — VPS records (host, admin creds used for provisioning).
-- `internal/accounts/` — SSH user provisioning via the scoped sudoers script (interface +
-  `SudoLocal` impl for VPS + `Stub` for dev).
-- `internal/links/` — builds `unic://` from an account ([spec](docs/unic-link-spec.md)).
-- `internal/store/` — SQLite access.
-- `web/` — frontend source + embedded build output.
-- `scripts/tunnel-user.sh` — the provisioning helper invoked through sudoers.
+Go (single static binary) · `net/http` stdlib · `modernc.org/sqlite` (pure-Go,
+no CGO) · embedded web UI via Go `embed`. Targets linux/amd64 for the VPS.
 
-## Build / run / test (fill in once scaffolded)
-- Build (local): `rtk go build ./cmd/panel`   ·   Test: `rtk go test ./...`
-- Run (dev): `rtk go run ./cmd/panel`
-- Ship to VPS: `GOOS=linux GOARCH=amd64 go build -o unic-panel ./cmd/panel`
-- Build the frontend before `go build` so `embed` picks up the latest assets.
+## Planned layout (NOT all scaffolded — confirm scope before generating)
 
-## The unic:// contract
-`unic://<base64url(json)>` where JSON = `{ v, name, host, port, user, password }`. Canonical
-spec: [`docs/unic-link-spec.md`](docs/unic-link-spec.md). Panel and app must agree on `v`.
+- `cmd/panel/` — entrypoint
+- `internal/store/` — SQLite + queries (admins, sessions, tunnel_users)
+- `internal/accounts/` — `Provisioner` interface + `Stub` (Windows dev) + `Sudo` (VPS)
+- `internal/links/` — `unic://` builder + parser
+- `internal/server/` — HTTP routes, handlers, session middleware
+- `web/embed.go` + `web/templates/*.html` + `web/static/*`
+- `scripts/tunnel-user.sh`, `scripts/sudoers.unicpanel`, `scripts/unic-panel.service`
+- `docs/` — architecture, unic-link-spec, vps-setup-runbook, design-brief
 
-## Dangerous areas (escalate)
-- Anything touching `sshd_config`, the `tunnelers` group, or the sudoers script: a mistake can
-  lock the admin out of the VPS or open a hole.
-- Password generation/handling and the provisioning shell calls.
+Full diagram: `../docs/structure.md`.
 
-## Notes
-Go 1.26 installed locally; targets linux/amd64 for the VPS. Auto-memory will accumulate
-build/debug specifics over time — keep this file lean.
+## Build / run / test (will activate once scaffolded)
+
+- Local with Stub provisioner:
+  `UNIC_PROVISIONER=stub UNIC_SSH_HOST=198.105.115.89 UNIC_SSH_PORT=2222 \
+   UNIC_ADMIN_PASSWORD=changeme rtk go run ./cmd/panel`
+- VPS build (cross-compile from Windows):
+  `$env:GOOS='linux'; $env:GOARCH='amd64'; rtk go build -o unic-panel ./cmd/panel`
+- Tests: `rtk go test ./...`
+
+## Provisioner contract
+
+Two implementations of `accounts.Provisioner`:
+- **`Stub`** — logs the call only. Used for local Windows dev where there's no sshd.
+- **`Sudo`** — `sudo -n /usr/local/sbin/tunnel-user.sh {create|lock|delete} ...`.
+  The script + sudoers entry are set up by `docs/vps-setup-runbook.md`.
+
+The panel itself runs as a **non-root** service user (e.g. `unicpanel`); the scoped
+sudoers entry whitelists ONLY the one script.
+
+## Gotchas specific to this repo
+
+- The VPS sshd runs on **port 2222**, not 22. Default `UNIC_SSH_PORT=22` is wrong
+  for this server — always set `UNIC_SSH_PORT=2222` in env.
+- `modernc.org/sqlite` registers driver name `"sqlite"` (not `"sqlite3"`).
+- Generated tunnel-user passwords are stored **in plaintext in SQLite** because the
+  panel must include them in the `unic://` link. The DB file MUST be `chmod 600` on
+  the VPS. Documented limitation; encrypted-at-rest is a Later item.
+
+## Scope reminder
+
+v1 = SSH-only. No VLESS / Reality / Hysteria / xray. See workspace `CLAUDE.md`.
